@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BatikQR — Seller Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- ====== Sidebar ====== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">B</div>
+        <div>
+          <div class="brand-text">BatikQR</div>
+          <div class="brand-sub">Seller Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Menu Utama</div>
+        <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+          <span class="nav-icon">📊</span> Dashboard Insight
+        </button>
+        <button class="nav-item" data-page="etalase" onclick="navigateTo('etalase')">
+          <span class="nav-icon">🏪</span> Kelola Etalase
+        </button>
+        <button class="nav-item" data-page="products" onclick="navigateTo('products')">
+          <span class="nav-icon">👘</span> Kelola Produk
+        </button>
+
+        <div class="nav-section-label">Laporan</div>
+        <button class="nav-item" data-page="wa-report" onclick="navigateTo('wa-report')">
+          <span class="nav-icon">💬</span> Laporan WhatsApp
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="store-name">Toko Batik Sari</div>
+        <div>Login sebagai: Bu Sari (Owner)</div>
+      </div>
+    </aside>
+
+    <!-- ====== Main Content ====== -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <h1 class="topbar-title" id="page-title">Dashboard Insight</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="period-filter" id="period-filter">
+            <button class="period-btn active" data-period="today" onclick="setPeriod('today')">Hari Ini</button>
+            <button class="period-btn" data-period="7days" onclick="setPeriod('7days')">7 Hari</button>
+            <button class="period-btn" data-period="30days" onclick="setPeriod('30days')">30 Hari</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- ====== Dashboard Page ====== -->
+        <div id="page-dashboard">
+          <!-- Stats Row -->
+          <div class="stats-row" id="stats-row"></div>
+
+          <!-- Charts & Rankings -->
+          <div class="dashboard-grid mb-20">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">📈 Top Produk Paling Dilihat</h3>
+                  <div class="card-subtitle">Ranking berdasarkan jumlah view</div>
+                </div>
+              </div>
+              <table class="data-table" id="table-most-viewed">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Produk</th>
+                    <th>Motif</th>
+                    <th>Views</th>
+                    <th>Trend</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">🛒 Top Produk Paling Dibeli</h3>
+                  <div class="card-subtitle">Ranking berdasarkan jumlah pembelian</div>
+                </div>
+              </div>
+              <table class="data-table" id="table-most-bought">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Produk</th>
+                    <th>Qty</th>
+                    <th>Revenue</th>
+                    <th>Trend</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Conversion & Chart -->
+          <div class="dashboard-grid mb-20">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">🔄 Konversi View → Buy per Produk</h3>
+                  <div class="card-subtitle">Perbandingan performa produk</div>
+                </div>
+              </div>
+              <table class="data-table" id="table-conversion">
+                <thead>
+                  <tr>
+                    <th>Produk</th>
+                    <th>Views</th>
+                    <th>Bought</th>
+                    <th>CR</th>
+                    <th style="width:120px;">Bar</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">📉 Tren Scan</h3>
+                  <div class="card-subtitle" id="chart-subtitle">Jumlah scan per jam hari ini</div>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="scan-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Showcase Performance -->
+          <div class="card mb-20">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">🏪 Performa per Etalase</h3>
+                <div class="card-subtitle">Distribusi scan, view, dan pembelian</div>
+              </div>
+            </div>
+            <div class="dashboard-grid" style="gap: 14px;">
+              <div class="chart-container">
+                <canvas id="showcase-chart"></canvas>
+              </div>
+              <table class="data-table" id="table-showcases">
+                <thead>
+                  <tr>
+                    <th>Etalase</th>
+                    <th>Scans</th>
+                    <th>Views</th>
+                    <th>Purchases</th>
+                    <th>CR</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== Etalase Page ====== -->
+        <div id="page-etalase" class="hidden">
+          <div class="flex-between mb-20">
+            <div>
+              <h2 style="font-size:1.1rem; font-weight:800;">Daftar Etalase</h2>
+              <p class="text-muted" style="font-size:0.85rem;">Kelola etalase dan generate QR code</p>
+            </div>
+            <button class="btn btn-primary" onclick="openEtalaseModal()">+ Tambah Etalase</button>
+          </div>
+          <div class="showcase-grid" id="showcase-list"></div>
+        </div>
+
+        <!-- ====== Products Page ====== -->
+        <div id="page-products" class="hidden">
+          <div class="flex-between mb-20 flex-wrap gap-8">
+            <div>
+              <h2 style="font-size:1.1rem; font-weight:800;">Daftar Produk</h2>
+              <p class="text-muted" style="font-size:0.85rem;">Kelola produk per etalase</p>
+            </div>
+            <div class="flex gap-8">
+              <select class="form-select" id="product-filter-showcase" onchange="renderProducts()" style="width:auto;">
+                <option value="all">Semua Etalase</option>
+              </select>
+              <button class="btn btn-primary" onclick="openProductModal()">+ Tambah Produk</button>
+            </div>
+          </div>
+          <div class="product-grid" id="product-list"></div>
+        </div>
+
+        <!-- ====== WA Report Page ====== -->
+        <div id="page-wa-report" class="hidden">
+          <div class="flex-between mb-20">
+            <div>
+              <h2 style="font-size:1.1rem; font-weight:800;">Laporan WhatsApp</h2>
+              <p class="text-muted" style="font-size:0.85rem;">Preview dan kirim laporan harian via WhatsApp Bot</p>
+            </div>
+            <button class="btn btn-primary" onclick="simulateSendWA()">📤 Kirim Laporan Sekarang</button>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">📱 Preview Laporan Harian</h3>
+              </div>
+              <div class="wa-preview-box" id="wa-preview"></div>
+              <div class="mt-12" style="font-size:0.82rem; color:var(--muted);">
+                <strong>Penerima:</strong> Bu Sari (6281234567890)<br>
+                <strong>Jadwal:</strong> Setiap hari pukul 20:00 WIB
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">📋 Log Pengiriman</h3>
+              </div>
+              <table class="data-table" id="table-wa-log">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Penerima</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>14-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                  <tr>
+                    <td>13-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                  <tr>
+                    <td>12-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                  <tr>
+                    <td>11-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-warning">⚠ Retry 1x</span></td>
+                  </tr>
+                  <tr>
+                    <td>10-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                  <tr>
+                    <td>09-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                  <tr>
+                    <td>08-02-2026</td>
+                    <td>20:00</td>
+                    <td>Bu Sari</td>
+                    <td><span class="tag tag-success">✓ Terkirim</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="mt-16 text-center">
+                <span class="tag tag-success" style="font-size:0.85rem; padding:6px 14px;">
+                  Reliabilitas: 100% (7/7 hari terkirim sukses)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ====== Etalase Modal ====== -->
+  <div class="modal-overlay" id="modal-etalase">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-etalase-title">Tambah Etalase</h3>
+        <button class="modal-close" onclick="closeModal('modal-etalase')">&times;</button>
+      </div>
+      <form onsubmit="saveEtalase(event)">
+        <input type="hidden" id="etalase-edit-id" />
+        <div class="form-group">
+          <label class="form-label">Nama Etalase</label>
+          <input type="text" class="form-input" id="etalase-name" placeholder="cth: Etalase Motif Klasik" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deskripsi</label>
+          <textarea class="form-textarea" id="etalase-desc" placeholder="Deskripsi singkat etalase..." rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="etalase-status">
+            <option value="active">Aktif</option>
+            <option value="inactive">Tidak Aktif</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-etalase')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== Product Modal ====== -->
+  <div class="modal-overlay" id="modal-product">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-product-title">Tambah Produk</h3>
+        <button class="modal-close" onclick="closeModal('modal-product')">&times;</button>
+      </div>
+      <form onsubmit="saveProduct(event)">
+        <input type="hidden" id="product-edit-id" />
+        <div class="form-group">
+          <label class="form-label">Etalase</label>
+          <select class="form-select" id="product-showcase" required>
+            <option value="">Pilih etalase...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Produk</label>
+          <input type="text" class="form-input" id="product-name" placeholder="cth: Kemeja Batik Truntum" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nama Motif</label>
+            <input type="text" class="form-input" id="product-motif" placeholder="cth: Truntum" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Harga (Rp)</label>
+            <input type="number" class="form-input" id="product-price" placeholder="cth: 389000" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stok</label>
+            <input type="number" class="form-input" id="product-stock" placeholder="cth: 10" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="product-status">
+              <option value="active">Aktif</option>
+              <option value="inactive">Tidak Aktif</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Storytelling Motif</label>
+          <textarea class="form-textarea" id="product-story" placeholder="Cerita budaya dan makna motif batik..." rows="4" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-product')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== QR Modal ====== -->
+  <div class="modal-overlay" id="modal-qr">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-qr-title">QR Code Etalase</h3>
+        <button class="modal-close" onclick="closeModal('modal-qr')">&times;</button>
+      </div>
+      <div class="qr-display" id="qr-display"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-qr')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
