@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BatikQR — MVP Mockup</title>
+  <style>
+    :root {
+      --bg: #f7f5f2;
+      --panel: #ffffff;
+      --text: #1f1f1f;
+      --muted: #6c6c6c;
+      --brand: #7a4b2a;
+      --brand-2: #b77b4d;
+      --line: #e8e1da;
+      --ok: #13795b;
+      --warn: #a55b00;
+      --shadow: 0 10px 30px rgba(39, 19, 8, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #fbf8f5 0%, var(--bg) 100%);
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, var(--brand), var(--brand-2));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .tab-btn.active {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .scan-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .scan-pill {
+      background: #f3ece6;
+      color: var(--brand);
+      border: 1px solid #ead9cc;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: .86rem;
+      font-weight: 700;
+    }
+
+    .hero {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .hero-card {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px dashed #e7d7ca;
+      background: #fcf9f7;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.primary { background: var(--brand); color: #fff; }
+    .btn.ghost { background: #f7f2ed; color: var(--brand); border: 1px solid #ead9cc; }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .products-wrap {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+    }
+
+    .product {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .product-media {
+      height: 140px;
+      background: linear-gradient(135deg, #d8bca8, #a67450);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .product-body { padding: 12px; }
+    .product-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .story {
+      margin-top: 8px;
+      font-size: .91rem;
+      color: #363636;
+      line-height: 1.45;
+      min-height: 70px;
+    }
+
+    .product-foot {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .price { font-weight: 800; color: var(--brand); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .stat .label { color: var(--muted); font-size: .84rem; }
+    .stat .value { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr .8fr;
+      gap: 12px;
+    }
+
+    .card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .92rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid #f0e8e1;
+      text-align: left;
+      padding: 8px 4px;
+    }
+
+    th { color: var(--muted); font-weight: 700; font-size: .82rem; text-transform: uppercase; letter-spacing: .4px; }
+
+    .tag {
+      font-size: .75rem;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .tag.ok { background: #e6f5ef; color: var(--ok); }
+    .tag.warn { background: #fff1df; color: var(--warn); }
+
+    .wa-preview {
+      background: #e9f8ef;
+      border: 1px solid #cdeed8;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: .9rem;
+      line-height: 1.45;
+      color: #1f4a33;
+      white-space: pre-line;
+    }
+
+    .hidden { display: none !important; }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: .84rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 1000px) {
+      .hero { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .topbar { align-items: stretch; }
+      .tabs { width: 100%; justify-content: center; }
+      .tab-btn { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge">B</div>
+        BatikQR MVP Mockup
+      </div>
+      <div class="tabs panel" role="tablist" aria-label="Mode Tampilan">
+        <button class="tab-btn active" data-view="customer" role="tab" aria-selected="true">View Pembeli</button>
+        <button class="tab-btn" data-view="seller" role="tab" aria-selected="false">View Seller</button>
+      </div>
+    </div>
+
+    <section id="customer-view">
+      <div class="scan-banner panel">
+        <strong>QR Etalase Berhasil Dipindai</strong>
+        <span class="scan-pill">Etalase: Motif Klasik • Token: ETL-KLS-01</span>
+      </div>
+
+      <div class="hero panel">
+        <div>
+          <h1>Katalog Etalase Motif Klasik</h1>
+          <p>Temukan batik pilihan dengan cerita budaya yang membuat setiap motif terasa lebih bermakna. Pilih produk favoritmu dan lanjutkan pembelian dengan cepat.</p>
+          <div class="cta-row">
+            <button class="btn primary">Lihat Semua Produk</button>
+            <button class="btn ghost">Filter Harga</button>
+          </div>
+        </div>
+        <div class="hero-card">
+          <strong>Insight Budaya Hari Ini</strong>
+          <p style="margin:8px 0 0; color:var(--muted);">Motif Truntum dulu dipakai dalam prosesi pernikahan Jawa sebagai simbol cinta yang tumbuh kembali dan tidak pernah padam.</p>
+        </div>
+      </div>
+
+      <div class="products-wrap">
+        <h2 class="section-title">Produk Batik di Etalase Ini</h2>
+        <div class="products-grid">
+          <article class="product">
+            <div class="product-media">Truntum Heritage</div>
+            <div class="product-body">
+              <h3 class="product-title">Kemeja Batik Truntum</h3>
+              <div class="meta">Motif: Truntum • Stok: Tersedia</div>
+              <p class="story">Motif Truntum melambangkan cinta yang tumbuh kembali. Pilihan ideal untuk tampilan elegan dengan nilai filosofis yang hangat dan timeless.</p>
+              <div class="product-foot">
+                <span class="price">Rp 389.000</span>
+                <button class="btn primary">Beli</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="product">
+            <div class="product-media">Megamendung Classic</div>
+            <div class="product-body">
+              <h3 class="product-title">Outer Batik Megamendung</h3>
+              <div class="meta">Motif: Megamendung • Stok: Tersedia</div>
+              <p class="story">Megamendung terinspirasi dari awan pembawa teduh. Coraknya memberi kesan kuat namun menenangkan, cocok untuk gaya modern maupun formal.</p>
+              <div class="product-foot">
+                <span class="price">Rp 425.000</span>
+                <button class="btn primary">Beli</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="product">
+            <div class="product-media">Kawung Signature</div>
+            <div class="product-body">
+              <h3 class="product-title">Blouse Batik Kawung</h3>
+              <div class="meta">Motif: Kawung • Stok: Tersisa 4</div>
+              <p class="story">Kawung dikenal sebagai simbol kesucian dan kebijaksanaan. Pola geometrisnya bersih, berkelas, dan mudah dipadankan untuk berbagai acara.</p>
+              <div class="product-foot">
+                <span class="price">Rp 349.000</span>
+                <button class="btn primary">Beli</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="seller-view" class="hidden">
+      <div class="panel" style="padding:16px; margin-bottom:14px;">
+        <h2 class="section-title" style="margin-bottom:12px;">Dashboard Seller • Toko Batik Sari</h2>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="label">Total Scan Hari Ini</div>
+            <div class="value">1.284</div>
+          </div>
+          <div class="stat">
+            <div class="label">Total Product Views</div>
+            <div class="value">3.912</div>
+          </div>
+          <div class="stat">
+            <div class="label">Total Pembelian</div>
+            <div class="value">286</div>
+          </div>
+          <div class="stat">
+            <div class="label">Conversion View to Buy</div>
+            <div class="value">7,3%</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3 class="section-title">Top Produk Paling Dilihat</h3>
+            <table>
+              <thead>
+                <tr><th>Produk</th><th>View</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Outer Batik Megamendung</td><td>834</td><td><span class="tag ok">Naik</span></td></tr>
+                <tr><td>Kemeja Batik Truntum</td><td>765</td><td><span class="tag ok">Naik</span></td></tr>
+                <tr><td>Blouse Batik Kawung</td><td>612</td><td><span class="tag warn">Turun</span></td></tr>
+                <tr><td>Dress Batik Parang</td><td>488</td><td><span class="tag ok">Naik</span></td></tr>
+                <tr><td>Scarf Batik Lereng</td><td>410</td><td><span class="tag warn">Turun</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3 class="section-title">Top Produk Paling Dibeli</h3>
+            <table>
+              <thead>
+                <tr><th>Produk</th><th>Qty</th><th>CR</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Kemeja Batik Truntum</td><td>71</td><td>9,3%</td></tr>
+                <tr><td>Outer Batik Megamendung</td><td>64</td><td>7,7%</td></tr>
+                <tr><td>Blouse Batik Kawung</td><td>53</td><td>8,7%</td></tr>
+                <tr><td>Dress Batik Parang</td><td>41</td><td>8,4%</td></tr>
+                <tr><td>Scarf Batik Lereng</td><td>37</td><td>9,0%</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3 class="section-title">Preview WA Bot (20:00)</h3>
+            <div class="wa-preview">Ringkasan Harian BatikQR
+Tanggal: 14-02-2026
+
+Top Viewed:
+1) Outer Megamendung (834)
+2) Kemeja Truntum (765)
+3) Blouse Kawung (612)
+
+Top Bought:
+1) Kemeja Truntum (71)
+2) Outer Megamendung (64)
+3) Blouse Kawung (53)
+
+Insight:
+- Produk paling banyak dilihat: Outer Megamendung
+- Produk paling laku: Kemeja Truntum
+- CR rata-rata: 7,3%</div>
+            <button class="btn primary" style="width:100%; margin-top:10px;">Kirim Ulang Laporan</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">Mockup ini untuk validasi alur MVP: QR Etalase → Katalog + Story → Pembelian → Ranking Insight → WhatsApp Report.</p>
+  </div>
+
+  <script>
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const customerView = document.getElementById('customer-view');
+    const sellerView = document.getElementById('seller-view');
+
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        tabButtons.forEach((item) => {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+        });
+
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+
+        if (button.dataset.view === 'customer') {
+          customerView.classList.remove('hidden');
+          sellerView.classList.add('hidden');
+        } else {
+          sellerView.classList.remove('hidden');
+          customerView.classList.add('hidden');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
