@@ -217,12 +217,22 @@
     .product-foot {
       margin-top: 12px;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       gap: 10px;
     }
 
     .price { font-weight: 800; color: var(--brand); }
+
+    .offline-note {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--brand);
+      background: #f7f2ed;
+      border: 1px solid #ead9cc;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
 
     .stats-grid {
       display: grid;
@@ -335,7 +345,7 @@
       <div class="hero panel">
         <div>
           <h1>Katalog Etalase Motif Klasik</h1>
-          <p>Temukan batik pilihan dengan cerita budaya yang membuat setiap motif terasa lebih bermakna. Pilih produk favoritmu dan lanjutkan pembelian dengan cepat.</p>
+          <p>Temukan batik pilihan dengan cerita budaya yang membuat setiap motif terasa lebih bermakna. Pilih produk favoritmu lalu lanjutkan transaksi langsung di kasir.</p>
           <div class="cta-row">
             <button class="btn primary">Lihat Semua Produk</button>
             <button class="btn ghost">Filter Harga</button>
@@ -358,7 +368,7 @@
               <p class="story">Motif Truntum melambangkan cinta yang tumbuh kembali. Pilihan ideal untuk tampilan elegan dengan nilai filosofis yang hangat dan timeless.</p>
               <div class="product-foot">
                 <span class="price">Rp 389.000</span>
-                <button class="btn primary">Beli</button>
+                <span class="offline-note">Transaksi di kasir</span>
               </div>
             </div>
           </article>
@@ -371,7 +381,7 @@
               <p class="story">Megamendung terinspirasi dari awan pembawa teduh. Coraknya memberi kesan kuat namun menenangkan, cocok untuk gaya modern maupun formal.</p>
               <div class="product-foot">
                 <span class="price">Rp 425.000</span>
-                <button class="btn primary">Beli</button>
+                <span class="offline-note">Transaksi di kasir</span>
               </div>
             </div>
           </article>
@@ -384,7 +394,7 @@
               <p class="story">Kawung dikenal sebagai simbol kesucian dan kebijaksanaan. Pola geometrisnya bersih, berkelas, dan mudah dipadankan untuk berbagai acara.</p>
               <div class="product-foot">
                 <span class="price">Rp 349.000</span>
-                <button class="btn primary">Beli</button>
+                <span class="offline-note">Transaksi di kasir</span>
               </div>
             </div>
           </article>
