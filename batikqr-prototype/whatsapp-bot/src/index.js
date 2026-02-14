@@ -35,7 +35,7 @@ const { STORE } = require('./data');
 
 // Nomor WhatsApp penerima laporan (format: 628xxxxx)
 // Ganti dengan nomor WhatsApp owner toko (Bu Sari)
-const RECIPIENT_NUMBER = process.env.RECIPIENT_NUMBER || '62895355484060';
+const RECIPIENT_NUMBER = process.env.RECIPIENT_NUMBER || '62812345678';
 const RECIPIENT_JID = `${RECIPIENT_NUMBER}@s.whatsapp.net`;
 
 // Auth session storage path
