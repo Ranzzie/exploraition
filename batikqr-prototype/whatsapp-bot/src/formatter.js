@@ -6,7 +6,6 @@
  * - Top 5 most viewed
  * - Top 5 most bought
  * - Highlight produk naik/turun
- * - Ringkasan conversion rate
  */
 
 const { STORE, DAILY_ANALYTICS, getProductById, formatNumber } = require('./data');
@@ -70,17 +69,14 @@ function generateDailyReport() {
     ...topBought.map((stat, i) => {
       const product = getProductById(stat.product_id);
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-      const cr = stat.views > 0 ? ((stat.purchases / stat.views) * 100).toFixed(1) : '0';
-      return `${medal} ${product.product_name}\n    🛒 ${formatNumber(stat.purchases)} pcs (CR: ${cr}%)`;
+      return `${medal} ${product.product_name}\n    🛒 ${formatNumber(stat.purchases)} pcs`;
     }),
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
     `📊 *RINGKASAN PERFORMA*`,
     `━━━━━━━━━━━━━━━━━━━━━━`,
-    `📡 Total Scan     : ${formatNumber(data.total_scans)}`,
-    `👁️ Total Views    : ${formatNumber(data.total_views)}`,
+    `�️ Total Views    : ${formatNumber(data.total_views)}`,
     `🛒 Total Pembelian: ${formatNumber(data.total_purchases)}`,
-    `🔄 Conversion Rate: *${data.conversion_rate}%*`,
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
     `📈 *HIGHLIGHT PRODUK*`,
@@ -152,8 +148,6 @@ function generateSalesSummary() {
     `💰 *Total Revenue : ${formatRupiah(totalRevenue)}*`,
     `🛒 Total Terjual  : ${formatNumber(data.total_purchases)} pcs`,
     `👁️ Total Dilihat  : ${formatNumber(data.total_views)}`,
-    `📡 Total Scan     : ${formatNumber(data.total_scans)}`,
-    `🔄 Conversion     : *${data.conversion_rate}%*`,
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
     `🏆 *TOP 5 PALING LAKU*`,
@@ -161,13 +155,12 @@ function generateSalesSummary() {
     ...topBought.map((stat, i) => {
       const product = getProductById(stat.product_id);
       const revenue = stat.purchases * product.price;
-      const cr = stat.views > 0 ? ((stat.purchases / stat.views) * 100).toFixed(1) : '0';
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-      return `${medal} *${product.product_name}*\n    ${formatNumber(stat.purchases)} pcs • ${formatRupiah(revenue)} • CR ${cr}%`;
+      return `${medal} *${product.product_name}*\n    ${formatNumber(stat.purchases)} pcs • ${formatRupiah(revenue)}`;
     }),
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
-    `💡 Ketik *report* untuk laporan lengkap`,
+    `💡 Ketik */laporan* untuk laporan lengkap`,
     `🤖 _BatikQR Bot_`
   ];
 

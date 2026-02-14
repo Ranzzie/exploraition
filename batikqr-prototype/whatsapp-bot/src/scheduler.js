@@ -19,6 +19,9 @@ const { generateDailyReport, generateSalesSummary, generateStatusNotification } 
 // ============================================================
 const REMINDER_INTERVAL_MINUTES = parseInt(process.env.REMINDER_INTERVAL || '2', 10);
 
+// Timeout menunggu ACK dari server WhatsApp (ms)
+const MESSAGE_ACK_TIMEOUT_MS = 15000;
+
 // Delivery log (in-memory for prototype)
 const deliveryLog = [];
 
@@ -46,6 +49,93 @@ function logDelivery(recipient, status, errorMessage = null) {
 }
 
 /**
+ * Menunggu konfirmasi (ACK) dari server WhatsApp bahwa pesan benar-benar terkirim.
+ *
+ * Baileys menggenerate key.id secara LOKAL sebelum mengirim ke server,
+ * sehingga `result.key.id` selalu ada meskipun pesan gagal terkirim.
+ * Fungsi ini mendengarkan event `messages.update` dan menunggu status
+ * berubah menjadi >= SERVER_ACK (2), yang berarti server WA sudah
+ * menerima dan meneruskan pesan.
+ *
+ * Status Baileys:
+ *   0 = ERROR, 1 = PENDING, 2 = SERVER_ACK,
+ *   3 = DELIVERY_ACK, 4 = READ, 5 = PLAYED
+ *
+ * @param {object} sock - Baileys socket connection
+ * @param {string} msgId - Message key ID yang dikembalikan oleh sendMessage
+ * @param {number} timeoutMs - Batas waktu menunggu ACK (default 15s)
+ * @returns {Promise<number>} Status akhir pesan (>= 2 jika berhasil)
+ */
+function waitForMessageAck(sock, msgId, timeoutMs = MESSAGE_ACK_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      sock.ev.off('messages.update', handler);
+      reject(new Error(
+        `Timeout ${timeoutMs / 1000}s: server WA tidak mengkonfirmasi pesan (msgId: ${msgId}). ` +
+        `Pesan kemungkinan tidak terkirim.`
+      ));
+    }, timeoutMs);
+
+    const handler = (updates) => {
+      for (const update of updates) {
+        if (update.key?.id === msgId) {
+          const status = update.update?.status;
+          if (status >= 2) {
+            // SERVER_ACK atau lebih — pesan benar-benar terkirim
+            clearTimeout(timer);
+            sock.ev.off('messages.update', handler);
+            resolve(status);
+          } else if (status === 0) {
+            // ERROR — server menolak pesan
+            clearTimeout(timer);
+            sock.ev.off('messages.update', handler);
+            reject(new Error(
+              `Server WA menolak pesan (status: ERROR, msgId: ${msgId})`
+            ));
+          }
+        }
+      }
+    };
+
+    sock.ev.on('messages.update', handler);
+  });
+}
+
+/**
+ * Mengirim pesan WhatsApp dan memastikan pesan benar-benar terkirim
+ * dengan menunggu ACK dari server.
+ *
+ * @param {object} sock - Baileys socket connection
+ * @param {string} recipientJid - WhatsApp JID penerima
+ * @param {string} text - Isi pesan
+ * @returns {Promise<{ msgId: string, status: number }>}
+ */
+async function sendAndVerify(sock, recipientJid, text) {
+  // 1. Cek koneksi
+  if (!sock.user) {
+    throw new Error('Bot belum terhubung ke WhatsApp');
+  }
+
+  // 2. Kirim pesan (Baileys generate key.id lokal, belum tentu sampai server)
+  const result = await sock.sendMessage(recipientJid, { text });
+  const msgId = result?.key?.id;
+
+  if (!msgId) {
+    throw new Error('sendMessage gagal: tidak ada key.id di response');
+  }
+
+  console.log(`   📨 Pesan dikirim, menunggu ACK dari server... (msgId: ${msgId})`);
+
+  // 3. Tunggu konfirmasi dari server bahwa pesan benar-benar terkirim
+  const status = await waitForMessageAck(sock, msgId);
+
+  const statusLabel = { 2: 'SERVER_ACK', 3: 'DELIVERY_ACK', 4: 'READ', 5: 'PLAYED' };
+  console.log(`   ✅ ACK diterima: ${statusLabel[status] || status} (msgId: ${msgId})`);
+
+  return { msgId, status };
+}
+
+/**
  * Send daily report via WhatsApp
  * @param {object} sock - Baileys socket connection
  * @param {string} recipientJid - WhatsApp JID (e.g., '628123456789@s.whatsapp.net')
@@ -60,10 +150,10 @@ async function sendDailyReport(sock, recipientJid, retryCount = 0) {
     const message = generateDailyReport();
     
     console.log('📨 Sending to:', recipientJid);
-    await sock.sendMessage(recipientJid, { text: message });
+    const { msgId } = await sendAndVerify(sock, recipientJid, message);
 
     logDelivery(recipientJid, 'success');
-    console.log('✅ Daily report sent successfully!\n');
+    console.log(`✅ Daily report sent & verified! (msgId: ${msgId})\n`);
 
   } catch (error) {
     console.error('❌ Failed to send report:', error.message);
@@ -134,9 +224,10 @@ function startReminder(sock, recipientJid) {
     try {
       const header = `🔔 *REMINDER OTOMATIS (setiap ${REMINDER_INTERVAL_MINUTES} menit)*\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
       const message = generateDailyReport();
-      await sock.sendMessage(recipientJid, { text: header + message });
+      const { msgId } = await sendAndVerify(sock, recipientJid, header + message);
+
       logDelivery(recipientJid, 'success');
-      console.log('✅ Reminder sent successfully!');
+      console.log(`✅ Reminder sent & verified! (msgId: ${msgId})`);
     } catch (error) {
       console.error('❌ Reminder failed:', error.message);
       logDelivery(recipientJid, 'failed', `Reminder: ${error.message}`);

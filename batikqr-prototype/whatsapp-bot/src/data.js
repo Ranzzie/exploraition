@@ -8,7 +8,7 @@ const STORE = {
   id: 'store-001',
   name: 'Toko Batik Sari',
   owner: 'Bu Sari',
-  phone: '628123456789'
+  phone: '628889632262'
 };
 
 const PRODUCTS = [

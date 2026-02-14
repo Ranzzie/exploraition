@@ -10,7 +10,7 @@
  * 4. Scan QR code yang muncul di terminal menggunakan WhatsApp
  * 5. Bot akan terhubung, scheduler harian + reminder periodik aktif
  * 6. Ketik "/ringkasan" untuk ringkasan penjualan singkat
- * 7. Ketik "report" untuk laporan harian lengkap
+ * 7. Ketik "/laporan" untuk laporan harian lengkap
  *
  * Environment variables:
  *   RECIPIENT_NUMBER  - Nomor WA penerima (default: 628123456789)
@@ -22,7 +22,7 @@
  * - Section 9.3: Bot & Notification (FR-11, FR-12, FR-13)
  */
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestWaWebVersion, makeCacheableSignalKeyStore, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const { generateDailyReport, generateSalesSummary, generateStatusNotification } = require('./formatter');
@@ -35,7 +35,7 @@ const { STORE } = require('./data');
 
 // Nomor WhatsApp penerima laporan (format: 628xxxxx)
 // Ganti dengan nomor WhatsApp owner toko (Bu Sari)
-const RECIPIENT_NUMBER = process.env.RECIPIENT_NUMBER || '628123456789';
+const RECIPIENT_NUMBER = process.env.RECIPIENT_NUMBER || '62895355484060';
 const RECIPIENT_JID = `${RECIPIENT_NUMBER}@s.whatsapp.net`;
 
 // Auth session storage path
@@ -54,12 +54,20 @@ async function startBot() {
   console.log(`👤 Owner: ${STORE.owner}`);
   console.log(`📱 Penerima laporan: ${RECIPIENT_NUMBER}\n`);
 
+  // Fetch latest WA Web version (required by Baileys v6)
+  const { version } = await fetchLatestWaWebVersion({});
+  console.log(`🌐 WA Web version: ${version.join('.')}`);
+
   // Load or create auth state
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
 
   // Create socket connection
   const sock = makeWASocket({
-    auth: state,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
+    },
+    version,
     printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
     browser: ['BatikQR Bot', 'Chrome', '1.0.0']
@@ -102,9 +110,9 @@ async function startBot() {
 
       console.log('💡 Commands available (kirim pesan ke bot):');
       console.log('   • "/ringkasan"  → Ringkasan penjualan singkat');
-      console.log('   • "report"      → Kirim laporan harian lengkap');
-      console.log('   • "status"      → Cek status bot dan delivery log');
-      console.log('   • "help"        → Tampilkan bantuan\n');
+      console.log('   • "/laporan"    → Kirim laporan harian lengkap');
+      console.log('   • "/status"     → Cek status bot dan delivery log');
+      console.log('   • "/bantuan"    → Tampilkan bantuan\n');
     }
   });
 
@@ -144,8 +152,8 @@ async function startBot() {
       }
     }
 
-    // Command: report — trigger manual report send
-    else if (text === 'report' || text === 'laporan') {
+    // Command: /laporan — trigger manual report send
+    else if (text === '/laporan') {
       console.log('📤 Manual report trigger received');
       await sock.sendMessage(senderJid, {
         text: '⏳ Sedang menyiapkan laporan harian...'
@@ -163,8 +171,8 @@ async function startBot() {
       }
     }
 
-    // Command: status — check bot status
-    else if (text === 'status') {
+    // Command: /status — check bot status
+    else if (text === '/status') {
       const log = getDeliveryLog();
       const successCount = log.filter(l => l.status === 'success').length;
       const failCount = log.filter(l => l.status.startsWith('fail')).length;
@@ -192,8 +200,8 @@ async function startBot() {
       await sock.sendMessage(senderJid, { text: statusMsg });
     }
 
-    // Command: help
-    else if (text === 'help' || text === 'bantuan') {
+    // Command: /bantuan
+    else if (text === '/bantuan') {
       const interval = getReminderInterval();
       const helpMsg = [
         '🤖 *BatikQR Bot — Bantuan*',
@@ -204,13 +212,13 @@ async function startBot() {
         '🧾 */ringkasan*',
         '   Ringkasan penjualan singkat (revenue, top 5 laku)',
         '',
-        '📊 *report* / *laporan*',
+        '📊 */laporan*',
         '   Kirim laporan harian lengkap sekarang juga',
         '',
-        '📈 *status*',
+        '📈 */status*',
         '   Cek status bot dan riwayat pengiriman',
         '',
-        '❓ *help* / *bantuan*',
+        '❓ */bantuan*',
         '   Tampilkan pesan ini',
         '',
         '━━━━━━━━━━━━━━━━━━━━',
