@@ -103,13 +103,8 @@ function renderDashboard() {
   // Stats row
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card">
-      <div class="stat-icon icon-scans">📡</div>
-      <div class="stat-label">Total Scan</div>
-      <div class="stat-value">${formatNumber(data.total_scans)}</div>
-    </div>
-    <div class="stat-card">
       <div class="stat-icon icon-views">👁️</div>
-      <div class="stat-label">Total Product Views</div>
+      <div class="stat-label">Total Produk Terlihat Perminggu</div>
       <div class="stat-value">${formatNumber(data.total_views)}</div>
     </div>
     <div class="stat-card">
@@ -118,9 +113,9 @@ function renderDashboard() {
       <div class="stat-value">${formatNumber(data.total_purchases)}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon icon-conversion">🔄</div>
-      <div class="stat-label">Conversion Rate</div>
-      <div class="stat-value">${data.conversion_rate}%</div>
+      <div class="stat-icon icon-revenue">💰</div>
+      <div class="stat-label">Total Pendapatan</div>
+      <div class="stat-value">${formatRupiah(data.revenue)}</div>
     </div>
   `;
 
@@ -161,46 +156,16 @@ function renderDashboard() {
     })
     .join('');
 
-  // Conversion table
-  const convBody = document.querySelector('#table-conversion tbody');
-  const maxCR = Math.max(...data.product_stats.map(s => s.views > 0 ? (s.purchases / s.views) * 100 : 0));
-  convBody.innerHTML = data.product_stats
-    .sort((a, b) => {
-      const crA = a.views > 0 ? (a.purchases / a.views) * 100 : 0;
-      const crB = b.views > 0 ? (b.purchases / b.views) * 100 : 0;
-      return crB - crA;
-    })
-    .map(stat => {
-      const product = getProductById(stat.product_id);
-      const cr = stat.views > 0 ? ((stat.purchases / stat.views) * 100).toFixed(1) : 0;
-      const barWidth = maxCR > 0 ? (cr / maxCR) * 100 : 0;
-      return `
-        <tr>
-          <td>${product.product_name}</td>
-          <td>${formatNumber(stat.views)}</td>
-          <td>${formatNumber(stat.purchases)}</td>
-          <td><strong>${cr}%</strong></td>
-          <td>
-            <div class="conversion-bar">
-              <div class="conversion-fill" style="width:${barWidth}%"></div>
-            </div>
-          </td>
-        </tr>`;
-    })
-    .join('');
-
   // Showcase table
   const showcaseBody = document.querySelector('#table-showcases tbody');
   showcaseBody.innerHTML = data.showcase_stats.map(stat => {
     const showcase = getShowcaseById(stat.showcase_id);
-    const cr = stat.views > 0 ? ((stat.purchases / stat.views) * 100).toFixed(1) : '0';
     return `
       <tr>
         <td><strong>${showcase.name}</strong></td>
         <td>${formatNumber(stat.scans)}</td>
         <td>${formatNumber(stat.views)}</td>
         <td>${formatNumber(stat.purchases)}</td>
-        <td><strong>${cr}%</strong></td>
       </tr>`;
   }).join('');
 
@@ -218,16 +183,16 @@ function renderScanChart(data) {
   if (currentPeriod === 'today') {
     labels = data.hourly_scans.map((_, i) => `${String(i).padStart(2, '0')}:00`);
     chartData = data.hourly_scans;
-    subtitle = 'Jumlah scan per jam hari ini';
+    subtitle = 'Jumlah kunjungan per jam hari ini';
   } else if (currentPeriod === '7days') {
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     labels = data.daily_scans.map((_, i) => days[i]);
     chartData = data.daily_scans;
-    subtitle = 'Jumlah scan per hari (7 hari terakhir)';
+    subtitle = 'Jumlah kunjungan per hari (7 hari terakhir)';
   } else {
     labels = data.weekly_scans.map((_, i) => `Minggu ${i + 1}`);
     chartData = data.weekly_scans;
-    subtitle = 'Jumlah scan per minggu (30 hari terakhir)';
+    subtitle = 'Jumlah kunjungan per minggu (30 hari terakhir)';
   }
 
   document.getElementById('chart-subtitle').textContent = subtitle;
@@ -237,7 +202,7 @@ function renderScanChart(data) {
     data: {
       labels,
       datasets: [{
-        label: 'Scan',
+        label: 'Kunjungan',
         data: chartData,
         borderColor: '#7a4b2a',
         backgroundColor: 'rgba(122, 75, 42, 0.1)',
@@ -284,19 +249,19 @@ function renderShowcaseChart(data) {
       labels,
       datasets: [
         {
-          label: 'Scans',
+          label: 'Kunjungan',
           data: data.showcase_stats.map(s => s.scans),
           backgroundColor: 'rgba(27, 79, 114, 0.7)',
           borderRadius: 6
         },
         {
-          label: 'Views',
+          label: 'Dilihat',
           data: data.showcase_stats.map(s => s.views),
           backgroundColor: 'rgba(183, 123, 77, 0.7)',
           borderRadius: 6
         },
         {
-          label: 'Purchases',
+          label: 'Pembelian',
           data: data.showcase_stats.map(s => s.purchases),
           backgroundColor: 'rgba(19, 121, 91, 0.7)',
           borderRadius: 6
@@ -588,6 +553,13 @@ function deleteProduct(id) {
 // WhatsApp Report
 // ============================================================
 
+// ============================================================
+// WhatsApp Bot API Config
+// URL REST API dari WhatsApp bot (default: localhost:3001)
+// Bot harus sedang berjalan agar API bisa diakses
+// ============================================================
+const WA_BOT_API = 'http://localhost:3001';
+
 function renderWAReport() {
   const data = ANALYTICS.today;
   const topViewed = [...data.product_stats].sort((a, b) => b.views - a.views).slice(0, 5);
@@ -608,7 +580,7 @@ function renderWAReport() {
 ━━━━━━━━━━━━━━━━━━
 ${topViewed.map((s, i) => {
     const p = getProductById(s.product_id);
-    return `${i + 1}. ${p.product_name} — ${formatNumber(s.views)} views`;
+    return `${i + 1}. ${p.product_name} — ${formatNumber(s.views)} dilihat`;
   }).join('\n')}
 
 ━━━━━━━━━━━━━━━━━━
@@ -620,12 +592,11 @@ ${topBought.map((s, i) => {
   }).join('\n')}
 
 ━━━━━━━━━━━━━━━━━━
-📊 *INSIGHT HARI INI*
+📊 *RINGKASAN HARI INI*
 ━━━━━━━━━━━━━━━━━━
-📡 Total Scan: ${formatNumber(data.total_scans)}
-👁️ Total Views: ${formatNumber(data.total_views)}
+👁️ Total Dilihat: ${formatNumber(data.total_views)}
 🛒 Total Pembelian: ${formatNumber(data.total_purchases)}
-🔄 Conversion Rate: ${data.conversion_rate}%
+💰 Total Pendapatan: ${formatRupiah(data.revenue)}
 
 🔺 *Produk Naik:*
 ${trendUp.length > 0 ? trendUp.map(n => `   • ${n}`).join('\n') : '   Tidak ada'}
@@ -638,25 +609,76 @@ ${trendDown.length > 0 ? trendDown.map(n => `   • ${n}`).join('\n') : '   Tida
 ⏰ ${today.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
 
   document.getElementById('wa-preview').textContent = message;
+
+  // Cek status bot via API
+  checkBotStatus();
 }
 
-function simulateSendWA() {
-  showToast('📤 Mengirim laporan ke WhatsApp...', 'info');
-  setTimeout(() => {
-    showToast('✅ Laporan berhasil dikirim ke Bu Sari!', 'success');
+/**
+ * Cek status bot WhatsApp via REST API.
+ * Mengupdate tampilan status di halaman Laporan WhatsApp.
+ */
+async function checkBotStatus() {
+  const statusEl = document.getElementById('wa-bot-status');
+  const recipientEl = document.getElementById('wa-recipient');
 
-    // Add to log table
-    const tbody = document.querySelector('#table-wa-log tbody');
-    const now = new Date();
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
-      <td>${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
-      <td>Bu Sari</td>
-      <td><span class="tag tag-success">✓ Terkirim</span></td>
-    `;
-    tbody.insertBefore(row, tbody.firstChild);
-  }, 2000);
+  try {
+    const res = await fetch(`${WA_BOT_API}/api/status`);
+    const data = await res.json();
+
+    if (data.connected) {
+      statusEl.className = 'tag tag-success';
+      statusEl.textContent = '🟢 Bot Aktif & Terhubung';
+    } else {
+      statusEl.className = 'tag tag-warning';
+      statusEl.textContent = '🟡 Bot Aktif, Belum Terhubung WA';
+    }
+
+    if (recipientEl && data.recipient) {
+      recipientEl.textContent = data.recipient;
+    }
+  } catch (err) {
+    statusEl.className = 'tag tag-danger';
+    statusEl.textContent = '🔴 Bot Tidak Aktif';
+    console.warn('Bot API tidak dapat dihubungi:', err.message);
+  }
+}
+
+/**
+ * Kirim laporan harian via REST API ke WhatsApp Bot.
+ * Dashboard memanggil POST /api/kirim-laporan di bot server,
+ * bot langsung mengirim laporan ke penerima tanpa interaksi manual.
+ */
+async function sendWAReport() {
+  const btn = document.getElementById('btn-send-wa');
+  const originalText = btn.innerHTML;
+
+  // Disable tombol saat proses
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Mengirim laporan...';
+
+  showToast('📤 Mengirim laporan ke WhatsApp...', 'info');
+
+  try {
+    const res = await fetch(`${WA_BOT_API}/api/kirim-laporan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showToast(`✅ ${data.message}`, 'success');
+    } else {
+      showToast(`❌ Gagal: ${data.error}`, 'error');
+    }
+  } catch (err) {
+    showToast('❌ Tidak dapat menghubungi bot. Pastikan bot sedang berjalan.', 'error');
+    console.error('API call failed:', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
 }
 
 // ============================================================

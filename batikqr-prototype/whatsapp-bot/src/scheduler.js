@@ -259,6 +259,7 @@ function getReminderInterval() {
 
 module.exports = {
   sendDailyReport,
+  sendAndVerify,
   startScheduler,
   startReminder,
   getDeliveryLog,

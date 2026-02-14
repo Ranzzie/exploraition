@@ -80,8 +80,8 @@
                     <th>#</th>
                     <th>Produk</th>
                     <th>Motif</th>
-                    <th>Views</th>
-                    <th>Trend</th>
+                    <th>Dilihat</th>
+                    <th>Tren</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -100,9 +100,9 @@
                   <tr>
                     <th>#</th>
                     <th>Produk</th>
-                    <th>Qty</th>
-                    <th>Revenue</th>
-                    <th>Trend</th>
+                    <th>Jumlah</th>
+                    <th>Pendapatan</th>
+                    <th>Tren</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -110,39 +110,16 @@
             </div>
           </div>
 
-          <!-- Conversion & Chart -->
-          <div class="dashboard-grid mb-20">
-            <div class="card">
-              <div class="card-header">
-                <div>
-                  <h3 class="card-title">🔄 Konversi View → Buy per Produk</h3>
-                  <div class="card-subtitle">Perbandingan performa produk</div>
-                </div>
+          <!-- Tren Scan -->
+          <div class="card mb-20">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">📉 Tren Kunjungan</h3>
+                <div class="card-subtitle" id="chart-subtitle">Jumlah kunjungan per jam hari ini</div>
               </div>
-              <table class="data-table" id="table-conversion">
-                <thead>
-                  <tr>
-                    <th>Produk</th>
-                    <th>Views</th>
-                    <th>Bought</th>
-                    <th>CR</th>
-                    <th style="width:120px;">Bar</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
             </div>
-
-            <div class="card">
-              <div class="card-header">
-                <div>
-                  <h3 class="card-title">📉 Tren Scan</h3>
-                  <div class="card-subtitle" id="chart-subtitle">Jumlah scan per jam hari ini</div>
-                </div>
-              </div>
-              <div class="chart-container">
-                <canvas id="scan-chart"></canvas>
-              </div>
+            <div class="chart-container">
+              <canvas id="scan-chart"></canvas>
             </div>
           </div>
 
@@ -151,7 +128,7 @@
             <div class="card-header">
               <div>
                 <h3 class="card-title">🏪 Performa per Etalase</h3>
-                <div class="card-subtitle">Distribusi scan, view, dan pembelian</div>
+                <div class="card-subtitle">Distribusi kunjungan, dilihat, dan pembelian</div>
               </div>
             </div>
             <div class="dashboard-grid" style="gap: 14px;">
@@ -162,10 +139,9 @@
                 <thead>
                   <tr>
                     <th>Etalase</th>
-                    <th>Scans</th>
-                    <th>Views</th>
-                    <th>Purchases</th>
-                    <th>CR</th>
+                    <th>Kunjungan</th>
+                    <th>Dilihat</th>
+                    <th>Pembelian</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -208,86 +184,20 @@
           <div class="flex-between mb-20">
             <div>
               <h2 style="font-size:1.1rem; font-weight:800;">Laporan WhatsApp</h2>
-              <p class="text-muted" style="font-size:0.85rem;">Preview dan kirim laporan harian via WhatsApp Bot</p>
+              <p class="text-muted" style="font-size:0.85rem;">Pratinjau dan kirim laporan harian via WhatsApp Bot</p>
             </div>
-            <button class="btn btn-primary" onclick="simulateSendWA()">📤 Kirim Laporan Sekarang</button>
+            <button class="btn btn-primary" id="btn-send-wa" onclick="sendWAReport()">📤 Kirim Laporan Sekarang</button>
           </div>
 
-          <div class="dashboard-grid">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">📱 Preview Laporan Harian</h3>
-              </div>
-              <div class="wa-preview-box" id="wa-preview"></div>
-              <div class="mt-12" style="font-size:0.82rem; color:var(--muted);">
-                <strong>Penerima:</strong> Bu Sari (6281234567890)<br>
-                <strong>Jadwal:</strong> Setiap hari pukul 20:00 WIB
-              </div>
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📱 Pratinjau Laporan Harian</h3>
             </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">📋 Log Pengiriman</h3>
-              </div>
-              <table class="data-table" id="table-wa-log">
-                <thead>
-                  <tr>
-                    <th>Tanggal</th>
-                    <th>Waktu</th>
-                    <th>Penerima</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>14-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                  <tr>
-                    <td>13-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                  <tr>
-                    <td>12-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                  <tr>
-                    <td>11-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-warning">⚠ Retry 1x</span></td>
-                  </tr>
-                  <tr>
-                    <td>10-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                  <tr>
-                    <td>09-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                  <tr>
-                    <td>08-02-2026</td>
-                    <td>20:00</td>
-                    <td>Bu Sari</td>
-                    <td><span class="tag tag-success">✓ Terkirim</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="mt-16 text-center">
-                <span class="tag tag-success" style="font-size:0.85rem; padding:6px 14px;">
-                  Reliabilitas: 100% (7/7 hari terkirim sukses)
-                </span>
-              </div>
+            <div class="wa-preview-box" id="wa-preview"></div>
+            <div class="mt-12" style="font-size:0.82rem; color:var(--muted);">
+              <strong>Penerima:</strong> Bu Sari (<span id="wa-recipient">62812345678</span>)<br>
+              <strong>Jadwal:</strong> Setiap hari pukul 20:00 WIB<br>
+              <strong>Status Bot:</strong> <span id="wa-bot-status" class="tag tag-neutral">Memeriksa...</span>
             </div>
           </div>
         </div>

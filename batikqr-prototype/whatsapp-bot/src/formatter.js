@@ -60,7 +60,7 @@ function generateDailyReport() {
     ...topViewed.map((stat, i) => {
       const product = getProductById(stat.product_id);
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-      return `${medal} ${product.product_name}\n    👁️ ${formatNumber(stat.views)} views`;
+      return `${medal} ${product.product_name}\n    👁️ ${formatNumber(stat.views)} dilihat`;
     }),
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
@@ -75,7 +75,7 @@ function generateDailyReport() {
     `━━━━━━━━━━━━━━━━━━━━━━`,
     `📊 *RINGKASAN PERFORMA*`,
     `━━━━━━━━━━━━━━━━━━━━━━`,
-    `�️ Total Views    : ${formatNumber(data.total_views)}`,
+    `👁️ Total Dilihat  : ${formatNumber(data.total_views)}`,
     `🛒 Total Pembelian: ${formatNumber(data.total_purchases)}`,
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━`,
@@ -145,7 +145,7 @@ function generateSalesSummary() {
     `🏪 ${STORE.name}`,
     `⏰ Data per ${timeStr} WIB`,
     ``,
-    `💰 *Total Revenue : ${formatRupiah(totalRevenue)}*`,
+    `💰 *Total Pendapatan: ${formatRupiah(totalRevenue)}*`,
     `🛒 Total Terjual  : ${formatNumber(data.total_purchases)} pcs`,
     `👁️ Total Dilihat  : ${formatNumber(data.total_views)}`,
     ``,

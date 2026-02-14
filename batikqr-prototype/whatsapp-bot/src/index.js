@@ -25,8 +25,9 @@
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestWaWebVersion, makeCacheableSignalKeyStore, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
+const http = require('http');
 const { generateDailyReport, generateSalesSummary, generateStatusNotification } = require('./formatter');
-const { sendDailyReport, startScheduler, startReminder, getDeliveryLog, getReminderInterval } = require('./scheduler');
+const { sendDailyReport, startScheduler, startReminder, getDeliveryLog, getReminderInterval, sendAndVerify } = require('./scheduler');
 const { STORE } = require('./data');
 
 // ============================================================
@@ -40,6 +41,9 @@ const RECIPIENT_JID = `${RECIPIENT_NUMBER}@s.whatsapp.net`;
 
 // Auth session storage path
 const AUTH_DIR = './auth_session';
+
+// Port untuk REST API internal (diakses dari dashboard)
+const API_PORT = parseInt(process.env.API_PORT || '3001', 10);
 
 // ============================================================
 // Main Bot Logic
@@ -108,11 +112,15 @@ async function startBot() {
       // Start periodic reminder (default: every 2 minutes, configurable)
       const reminder = startReminder(sock, RECIPIENT_JID);
 
+      // Start HTTP API server untuk integrasi dashboard
+      startAPIServer(sock);
+
       console.log('💡 Commands available (kirim pesan ke bot):');
-      console.log('   • "/ringkasan"  → Ringkasan penjualan singkat');
-      console.log('   • "/laporan"    → Kirim laporan harian lengkap');
-      console.log('   • "/status"     → Cek status bot dan delivery log');
-      console.log('   • "/bantuan"    → Tampilkan bantuan\n');
+      console.log('   • "/ringkasan"     → Ringkasan penjualan singkat');
+      console.log('   • "/laporan"       → Kirim laporan harian lengkap');
+      console.log('   • "/kirimlaporan"  → Kirim laporan ke penerima (dari dashboard)');
+      console.log('   • "/status"        → Cek status bot dan delivery log');
+      console.log('   • "/bantuan"       → Tampilkan bantuan\n');
     }
   });
 
@@ -171,6 +179,32 @@ async function startBot() {
       }
     }
 
+    // Command: /kirimlaporan — dipicu dari dashboard seller, kirim laporan ke penerima
+    else if (text === '/kirimlaporan') {
+      console.log('📤 Dashboard trigger: /kirimlaporan from', senderJid);
+      await sock.sendMessage(senderJid, {
+        text: '⏳ Mengirim laporan harian ke penerima...'
+      });
+
+      try {
+        const report = generateDailyReport();
+
+        // Kirim laporan ke penerima yang dikonfigurasi (RECIPIENT_JID)
+        await sock.sendMessage(RECIPIENT_JID, { text: report });
+        console.log('✅ Report sent to recipient:', RECIPIENT_JID);
+
+        // Konfirmasi ke pengirim (dashboard user)
+        await sock.sendMessage(senderJid, {
+          text: `✅ Laporan harian berhasil dikirim ke ${RECIPIENT_NUMBER}!`
+        });
+      } catch (err) {
+        console.error('❌ Failed to send report via dashboard:', err.message);
+        await sock.sendMessage(senderJid, {
+          text: '❌ Gagal mengirim laporan. Pastikan bot terhubung dan coba lagi.'
+        });
+      }
+    }
+
     // Command: /status — check bot status
     else if (text === '/status') {
       const log = getDeliveryLog();
@@ -213,7 +247,10 @@ async function startBot() {
         '   Ringkasan penjualan singkat (revenue, top 5 laku)',
         '',
         '📊 */laporan*',
-        '   Kirim laporan harian lengkap sekarang juga',
+        '   Kirim laporan harian lengkap ke chat ini',
+        '',
+        '📤 */kirimlaporan*',
+        '   Kirim laporan ke penerima (dipicu dari dashboard)',
         '',
         '📈 */status*',
         '   Cek status bot dan riwayat pengiriman',
@@ -229,6 +266,106 @@ async function startBot() {
 
       await sock.sendMessage(senderJid, { text: helpMsg });
     }
+  });
+}
+
+// ============================================================
+// REST API Server — Internal endpoint untuk dashboard
+// ============================================================
+
+let apiServer = null;
+
+function startAPIServer(sock) {
+  // Tutup server lama jika ada (misalnya saat reconnect)
+  if (apiServer) {
+    apiServer.close();
+    apiServer = null;
+  }
+
+  apiServer = http.createServer(async (req, res) => {
+    // CORS headers agar bisa diakses dari dashboard (file:// atau localhost)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+    // Handle preflight OPTIONS
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    // POST /api/kirim-laporan — Kirim laporan harian ke penerima
+    if (req.method === 'POST' && req.url === '/api/kirim-laporan') {
+      console.log('\n🌐 [API] POST /api/kirim-laporan — dipicu dari dashboard');
+
+      try {
+        // Cek koneksi bot
+        if (!sock.user) {
+          res.writeHead(503);
+          res.end(JSON.stringify({
+            success: false,
+            error: 'Bot belum terhubung ke WhatsApp'
+          }));
+          return;
+        }
+
+        // Generate dan kirim laporan
+        const report = generateDailyReport();
+        const { msgId } = await sendAndVerify(sock, RECIPIENT_JID, report);
+
+        console.log('✅ [API] Laporan berhasil dikirim ke', RECIPIENT_NUMBER);
+
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          message: `Laporan berhasil dikirim ke ${RECIPIENT_NUMBER}`,
+          msgId,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (err) {
+        console.error('❌ [API] Gagal kirim laporan:', err.message);
+
+        res.writeHead(500);
+        res.end(JSON.stringify({
+          success: false,
+          error: err.message
+        }));
+      }
+      return;
+    }
+
+    // GET /api/status — Cek status bot
+    if (req.method === 'GET' && req.url === '/api/status') {
+      const log = getDeliveryLog();
+      const connected = !!sock.user;
+
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        connected,
+        store: STORE.name,
+        recipient: RECIPIENT_NUMBER,
+        reminder_interval: getReminderInterval(),
+        delivery_log: {
+          total: log.length,
+          success: log.filter(l => l.status === 'success').length,
+          failed: log.filter(l => l.status.startsWith('fail')).length
+        },
+        timestamp: new Date().toISOString()
+      }));
+      return;
+    }
+
+    // 404 — endpoint tidak ditemukan
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: 'Endpoint tidak ditemukan' }));
+  });
+
+  apiServer.listen(API_PORT, () => {
+    console.log(`\n🌐 REST API server aktif di http://localhost:${API_PORT}`);
+    console.log(`   POST /api/kirim-laporan  → Kirim laporan ke penerima`);
+    console.log(`   GET  /api/status         → Cek status bot\n`);
   });
 }
 
