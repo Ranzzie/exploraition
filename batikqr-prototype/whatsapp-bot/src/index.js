@@ -8,8 +8,13 @@
  * 2. Edit RECIPIENT_NUMBER dengan nomor WA tujuan
  * 3. npm start
  * 4. Scan QR code yang muncul di terminal menggunakan WhatsApp
- * 5. Bot akan terhubung dan scheduler laporan harian aktif
- * 6. Ketik "report" di chat untuk trigger manual
+ * 5. Bot akan terhubung, scheduler harian + reminder periodik aktif
+ * 6. Ketik "/ringkasan" untuk ringkasan penjualan singkat
+ * 7. Ketik "report" untuk laporan harian lengkap
+ *
+ * Environment variables:
+ *   RECIPIENT_NUMBER  - Nomor WA penerima (default: 628123456789)
+ *   REMINDER_INTERVAL - Jeda reminder dalam menit (default: 2)
  * 
  * Referensi PRD:
  * - Section 5.1C: WhatsApp Bot Reporting
@@ -20,8 +25,8 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
-const { generateDailyReport, generateStatusNotification } = require('./formatter');
-const { sendDailyReport, startScheduler, getDeliveryLog } = require('./scheduler');
+const { generateDailyReport, generateSalesSummary, generateStatusNotification } = require('./formatter');
+const { sendDailyReport, startScheduler, startReminder, getDeliveryLog, getReminderInterval } = require('./scheduler');
 const { STORE } = require('./data');
 
 // ============================================================
@@ -89,13 +94,17 @@ async function startBot() {
       console.log('\n✅ Bot berhasil terhubung ke WhatsApp!');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-      // Start the daily report scheduler
+      // Start the daily report scheduler (20:00 WIB)
       const scheduler = startScheduler(sock, RECIPIENT_JID);
 
+      // Start periodic reminder (default: every 2 minutes, configurable)
+      const reminder = startReminder(sock, RECIPIENT_JID);
+
       console.log('💡 Commands available (kirim pesan ke bot):');
-      console.log('   • "report"  → Kirim laporan harian sekarang');
-      console.log('   • "status"  → Cek status bot dan delivery log');
-      console.log('   • "help"    → Tampilkan bantuan\n');
+      console.log('   • "/ringkasan"  → Ringkasan penjualan singkat');
+      console.log('   • "report"      → Kirim laporan harian lengkap');
+      console.log('   • "status"      → Cek status bot dan delivery log');
+      console.log('   • "help"        → Tampilkan bantuan\n');
     }
   });
 
@@ -116,8 +125,27 @@ async function startBot() {
 
     console.log(`📩 Message from ${senderJid}: "${text}"`);
 
+    // Command: /ringkasan — quick sales summary
+    if (text === '/ringkasan' || text === 'ringkasan') {
+      console.log('🧾 Sales summary requested');
+      await sock.sendMessage(senderJid, {
+        text: '⏳ Menyiapkan ringkasan penjualan...'
+      });
+
+      try {
+        const summary = generateSalesSummary();
+        await sock.sendMessage(senderJid, { text: summary });
+        console.log('✅ Sales summary sent successfully');
+      } catch (err) {
+        console.error('❌ Failed to send sales summary:', err.message);
+        await sock.sendMessage(senderJid, {
+          text: '❌ Gagal mengirim ringkasan. Silakan coba lagi.'
+        });
+      }
+    }
+
     // Command: report — trigger manual report send
-    if (text === 'report' || text === 'laporan') {
+    else if (text === 'report' || text === 'laporan') {
       console.log('📤 Manual report trigger received');
       await sock.sendMessage(senderJid, {
         text: '⏳ Sedang menyiapkan laporan harian...'
@@ -144,12 +172,14 @@ async function startBot() {
         ? ((successCount / log.length) * 100).toFixed(1)
         : '100';
 
+      const interval = getReminderInterval();
       const statusMsg = [
         '🤖 *Status BatikQR Bot*',
         '━━━━━━━━━━━━━━━━━━━━',
         `🏪 Toko: ${STORE.name}`,
         `📱 Penerima: ${RECIPIENT_NUMBER}`,
-        `⏰ Jadwal: Setiap hari pukul 20:00 WIB`,
+        `⏰ Laporan harian: setiap pukul 20:00 WIB`,
+        `🔔 Reminder: setiap ${interval} menit`,
         ``,
         `📊 *Delivery Log*`,
         `✅ Berhasil: ${successCount}`,
@@ -164,14 +194,18 @@ async function startBot() {
 
     // Command: help
     else if (text === 'help' || text === 'bantuan') {
+      const interval = getReminderInterval();
       const helpMsg = [
         '🤖 *BatikQR Bot — Bantuan*',
         '━━━━━━━━━━━━━━━━━━━━',
         '',
         '📋 *Perintah yang tersedia:*',
         '',
+        '🧾 */ringkasan*',
+        '   Ringkasan penjualan singkat (revenue, top 5 laku)',
+        '',
         '📊 *report* / *laporan*',
-        '   Kirim laporan harian sekarang juga',
+        '   Kirim laporan harian lengkap sekarang juga',
         '',
         '📈 *status*',
         '   Cek status bot dan riwayat pengiriman',
@@ -180,7 +214,8 @@ async function startBot() {
         '   Tampilkan pesan ini',
         '',
         '━━━━━━━━━━━━━━━━━━━━',
-        '⏰ Laporan otomatis dikirim setiap hari pukul 20:00 WIB',
+        `🔔 Reminder otomatis: setiap ${interval} menit`,
+        '⏰ Laporan harian: setiap pukul 20:00 WIB',
         '🤖 _BatikQR Bot v1.0_'
       ].join('\n');
 

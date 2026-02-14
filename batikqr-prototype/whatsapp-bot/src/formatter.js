@@ -114,6 +114,67 @@ function generateDailyReport() {
 }
 
 /**
+ * Generate a quick sales summary (for /ringkasan command)
+ * Shorter and more focused than the full daily report.
+ * @returns {string}
+ */
+function generateSalesSummary() {
+  const data = DAILY_ANALYTICS;
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const topBought = [...data.product_stats]
+    .sort((a, b) => b.purchases - a.purchases)
+    .slice(0, 5);
+
+  // Calculate total revenue
+  let totalRevenue = 0;
+  data.product_stats.forEach(stat => {
+    const product = getProductById(stat.product_id);
+    totalRevenue += stat.purchases * product.price;
+  });
+
+  const formatRupiah = (amount) => 'Rp ' + amount.toLocaleString('id-ID');
+
+  const lines = [
+    `🧾 *RINGKASAN PENJUALAN*`,
+    `━━━━━━━━━━━━━━━━━━━━━━`,
+    `📅 ${dateStr}`,
+    `🏪 ${STORE.name}`,
+    `⏰ Data per ${timeStr} WIB`,
+    ``,
+    `💰 *Total Revenue : ${formatRupiah(totalRevenue)}*`,
+    `🛒 Total Terjual  : ${formatNumber(data.total_purchases)} pcs`,
+    `👁️ Total Dilihat  : ${formatNumber(data.total_views)}`,
+    `📡 Total Scan     : ${formatNumber(data.total_scans)}`,
+    `🔄 Conversion     : *${data.conversion_rate}%*`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━`,
+    `🏆 *TOP 5 PALING LAKU*`,
+    `━━━━━━━━━━━━━━━━━━━━━━`,
+    ...topBought.map((stat, i) => {
+      const product = getProductById(stat.product_id);
+      const revenue = stat.purchases * product.price;
+      const cr = stat.views > 0 ? ((stat.purchases / stat.views) * 100).toFixed(1) : '0';
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      return `${medal} *${product.product_name}*\n    ${formatNumber(stat.purchases)} pcs • ${formatRupiah(revenue)} • CR ${cr}%`;
+    }),
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━`,
+    `💡 Ketik *report* untuk laporan lengkap`,
+    `🤖 _BatikQR Bot_`
+  ];
+
+  return lines.join('\n');
+}
+
+/**
  * Generate a short notification when report is sent
  * @param {string} status - 'success' | 'failed'
  * @returns {string}
@@ -133,5 +194,6 @@ function generateStatusNotification(status) {
 
 module.exports = {
   generateDailyReport,
+  generateSalesSummary,
   generateStatusNotification
 };

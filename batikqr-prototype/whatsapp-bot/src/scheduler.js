@@ -9,7 +9,15 @@
  */
 
 const cron = require('node-cron');
-const { generateDailyReport, generateStatusNotification } = require('./formatter');
+const { generateDailyReport, generateSalesSummary, generateStatusNotification } = require('./formatter');
+
+// ============================================================
+// Configuration — Reminder Interval
+// Ubah nilai ini untuk mengatur jeda reminder (dalam menit)
+// Default: 2 menit (untuk testing)
+// Produksi: bisa diubah ke 60, 120, 480, dll.
+// ============================================================
+const REMINDER_INTERVAL_MINUTES = parseInt(process.env.REMINDER_INTERVAL || '2', 10);
 
 // Delivery log (in-memory for prototype)
 const deliveryLog = [];
@@ -104,15 +112,65 @@ function startScheduler(sock, recipientJid) {
 }
 
 /**
+ * Start a periodic reminder that sends the daily report every N minutes.
+ * Interval is configurable via REMINDER_INTERVAL_MINUTES or env REMINDER_INTERVAL.
+ *
+ * @param {object} sock - Baileys socket connection
+ * @param {string} recipientJid - WhatsApp JID
+ * @returns {{ interval: NodeJS.Timeout, stop: Function }}
+ */
+function startReminder(sock, recipientJid) {
+  const ms = REMINDER_INTERVAL_MINUTES * 60 * 1000;
+
+  console.log(`🔔 Reminder started — every ${REMINDER_INTERVAL_MINUTES} minute(s)`);
+  console.log(`   Recipient: ${recipientJid}`);
+  console.log(`   Interval : ${ms / 1000}s (${REMINDER_INTERVAL_MINUTES}m)`);
+  console.log(`   💡 Ubah jeda: set env REMINDER_INTERVAL=<menit> atau edit REMINDER_INTERVAL_MINUTES\n`);
+
+  const interval = setInterval(async () => {
+    const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    console.log(`\n🔔 [${now}] Reminder triggered — sending report...`);
+
+    try {
+      const header = `🔔 *REMINDER OTOMATIS (setiap ${REMINDER_INTERVAL_MINUTES} menit)*\n━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      const message = generateDailyReport();
+      await sock.sendMessage(recipientJid, { text: header + message });
+      logDelivery(recipientJid, 'success');
+      console.log('✅ Reminder sent successfully!');
+    } catch (error) {
+      console.error('❌ Reminder failed:', error.message);
+      logDelivery(recipientJid, 'failed', `Reminder: ${error.message}`);
+    }
+  }, ms);
+
+  return {
+    interval,
+    stop: () => {
+      clearInterval(interval);
+      console.log('🔕 Reminder stopped.');
+    }
+  };
+}
+
+/**
  * Get delivery log entries
  */
 function getDeliveryLog() {
   return deliveryLog;
 }
 
+/**
+ * Get current reminder interval config
+ */
+function getReminderInterval() {
+  return REMINDER_INTERVAL_MINUTES;
+}
+
 module.exports = {
   sendDailyReport,
   startScheduler,
+  startReminder,
   getDeliveryLog,
+  getReminderInterval,
   logDelivery
 };
